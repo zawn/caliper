@@ -1,0 +1,151 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.google.caliper</groupId>
+    <artifactId>caliper-assembly</artifactId>
+    <version>0.5-rc1</version>
+    <packaging>pom</packaging>
+
+    <name>caliper-assembly</name>
+    <url>http://maven.apache.org</url>
+
+    <dependencies>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>caliper</artifactId>
+            <version>0.5-rc1</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>dependencies</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
+                            <outputDirectory>${project.build.directory}/libs</outputDirectory>
+                            <excludeArtifactIds>android,opengl-api,xmlParserAPIs,commons-codec,json</excludeArtifactIds>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>src-dependencies</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>sources</classifier>
+                            <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
+                            <outputDirectory>${project.build.directory}/libs-sources</outputDirectory>
+                            <excludeArtifactIds>android,opengl-api,xmlParserAPIs,commons-codec,json</excludeArtifactIds>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>           
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>assembly.xml</descriptor>
+                            </descriptors>
+                            <finalName>caliper-assembly</finalName>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.6</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <property name="compile_classpath" refid="maven.compile.classpath"/>
+                                <property name="runtime_classpath" refid="maven.runtime.classpath"/>
+                                <property name="test_classpath" refid="maven.test.classpath"/>
+                                <property name="plugin_classpath" refid="maven.plugin.classpath"/>
+                                <echo message="compile classpath: ${compile_classpath}"/>
+                                <echo message="runtime classpath: ${runtime_classpath}"/>
+                                <echo message="test classpath:    ${test_classpath}"/>
+                                <echo message="plugin classpath:  ${plugin_classpath}"/>
+                
+                                <!-- Use jarjar to include a private copy of Apache Commons Codec 
+                                library to avoid a runtime dependency conflict with Android which 
+                                includes an older version of that library -->
+                                <mkdir dir="${project.build.directory}/caliper-assembly-${project.version}"/>
+                                <unzip src="${project.build.directory}/caliper-assembly-${project.version}.zip" dest="${project.build.directory}/caliper-assembly-${project.version}"/>
+                                <taskdef name="jarjar" classname="com.tonicsystems.jarjar.JarJarTask" classpathref="maven.plugin.classpath"/>
+                                <jarjar jarfile="${project.build.directory}/caliper-assembly-${project.version}.jar">
+                                    <zipgroupfileset dir="${project.build.directory}/caliper-assembly-${project.version}/libs" includes="*.jar" excludes="test-*.jar"/>        
+                                    <zipfileset src="${project.build.directory}/caliper-assembly-${project.version}/libs-sources/caliper-${project.version}-sources.jar" includes="**/*.java"/>
+                                    <rule pattern="com.google.gson.**" result="com.google.caliper.repackaged.com.google.gson.@1"/>
+                                    <rule pattern="com.google.common.**" result="com.google.caliper.repackaged.com.google.common.@1"/>
+                                    <rule pattern="com.google.monitoring.**" result="com.google.caliper.repackaged.com.google.monitoring.@1"/>
+                                    <keep pattern="com.google.caliper.**"/>
+                                </jarjar>
+                                <!-- 排除jsr305-1.3.9.jar包的源文件 -->
+                                <jar destfile="${project.build.directory}/scrubbed.jar" >
+                                    <zipfileset src="${project.build.directory}/caliper-assembly-${project.version}.jar">
+                                        <exclude name="javax/**"/>
+                                        <exclude name="CaliperCore.gwt.xml"/>
+                                    </zipfileset>
+                                </jar>
+                                <delete dir="${project.build.directory}/caliper-assembly-${project.version}"/>
+                                <delete dir="${project.build.directory}/caliper-assembly-${project.version}.jar"/>
+                                <move file="${project.build.directory}/scrubbed.jar" tofile="${project.build.directory}/caliper-assembly-${project.version}.jar"/>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.googlecode.jarjar</groupId>
+                        <artifactId>jarjar</artifactId>
+                        <version>1.3</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-install-plugin</artifactId>
+                <version>2.3.1</version>
+                <executions>
+                    <execution>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <configuration>
+                            <packaging>jar</packaging>
+                            <artifactId>${project.artifactId}</artifactId>
+                            <groupId>${project.groupId}</groupId>
+                            <version>${project.version}</version>
+                            <file>
+                                ${project.build.directory}/${project.artifactId}-${project.version}.jar
+                            </file>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

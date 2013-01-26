@@ -93,13 +93,18 @@
                                 includes an older version of that library -->
                                 <mkdir dir="${project.build.directory}/caliper-assembly-${project.version}"/>
                                 <unzip src="${project.build.directory}/caliper-assembly-${project.version}.zip" dest="${project.build.directory}/caliper-assembly-${project.version}"/>
-                                <taskdef name="jarjar" classname="com.tonicsystems.jarjar.JarJarTask" classpathref="maven.plugin.classpath"/>
+                                <!-- jarjar 1.3 版本有Bug,这里使用1.4 -->
+                                <path id="tools.jarlibs">
+                                    <pathelement path="${basedir}/libs/jarjar-1.4.jar" />
+                                </path>
+                                <taskdef name="jarjar" classname="com.tonicsystems.jarjar.JarJarTask" classpathref="tools.jarlibs"/>
                                 <jarjar jarfile="${project.build.directory}/caliper-assembly-${project.version}.jar">
                                     <zipgroupfileset dir="${project.build.directory}/caliper-assembly-${project.version}/libs" includes="*.jar" excludes="test-*.jar"/>        
                                     <zipfileset src="${project.build.directory}/caliper-assembly-${project.version}/libs-sources/caliper-${project.version}-sources.jar" includes="**/*.java"/>
                                     <rule pattern="com.google.gson.**" result="com.google.caliper.repackaged.com.google.gson.@1"/>
                                     <rule pattern="com.google.common.**" result="com.google.caliper.repackaged.com.google.common.@1"/>
                                     <rule pattern="com.google.monitoring.**" result="com.google.caliper.repackaged.com.google.monitoring.@1"/>
+                                    <rule pattern="com.google.common.io.Closeables" result="com.google.caliper.repackaged.com.google.common.io.Closeables"/>
                                     <keep pattern="com.google.caliper.**"/>
                                 </jarjar>
                                 <!-- 排除jsr305-1.3.9.jar包的源文件 -->
@@ -116,13 +121,15 @@
                         </configuration>
                     </execution>
                 </executions>
+                <!--                
                 <dependencies>
                     <dependency>
                         <groupId>com.googlecode.jarjar</groupId>
                         <artifactId>jarjar</artifactId>
-                        <version>1.3</version>
+                        <version>1.4</version>
                     </dependency>
                 </dependencies>
+                -->
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

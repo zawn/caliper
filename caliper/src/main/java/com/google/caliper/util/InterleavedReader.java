@@ -51,8 +51,8 @@ public final class InterleavedReader implements Closeable {
     }
     this.marker = marker;
     this.reader = reader instanceof BufferedReader
-        ? (BufferedReader) reader
-        : new BufferedReader(reader);
+            ? (BufferedReader) reader
+            : new BufferedReader(reader, 8192);
   }
 
   /**

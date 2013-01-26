@@ -194,7 +194,7 @@ public final class Runner {
         System.out.println("");
         System.out.println("View current and previous benchmark results online:");
         BufferedReader in = new BufferedReader(
-            new InputStreamReader(urlConnection.getInputStream()));
+                new InputStreamReader(urlConnection.getInputStream()), 8192);
         System.out.println("  " + in.readLine());
         in.close();
         return;
@@ -203,7 +203,7 @@ public final class Runner {
       System.out.println("Posting to " + postUrl + " failed: "
           + urlConnection.getResponseMessage());
       BufferedReader reader = new BufferedReader(
-          new InputStreamReader(urlConnection.getInputStream()));
+              new InputStreamReader(urlConnection.getInputStream()), 8192);
       String line;
       while ((line = reader.readLine()) != null) {
         System.out.println(line);
@@ -315,11 +315,6 @@ public final class Runner {
   private ProcessBuilder createCommand(Scenario scenario, Vm vm, MeasurementType type) {
     File workingDirectory = new File(System.getProperty("user.dir"));
 
-    String classPath = System.getProperty("java.class.path");
-    if (classPath == null || classPath.length() == 0) {
-      throw new IllegalStateException("java.class.path is undefined in " + System.getProperties());
-    }
-
     ImmutableList.Builder<String> vmArgs = ImmutableList.builder();
     vmArgs.addAll(ARGUMENT_SPLITTER.split(scenario.getVariables().get(Scenario.VM_KEY)));
     if (type == MeasurementType.INSTANCE || type == MeasurementType.MEMORY) {
@@ -347,8 +342,8 @@ public final class Runner {
     }
     caliperArgs.add(arguments.getSuiteClassName());
 
-    return vm.newProcessBuilder(workingDirectory, classPath,
-        vmArgs.build(), InProcessRunner.class.getName(), caliperArgs.build());
+    return vm.newProcessBuilder(workingDirectory, vmArgs.build(), 
+            InProcessRunner.class.getName(), caliperArgs.build());
   }
 
   private void debug() {

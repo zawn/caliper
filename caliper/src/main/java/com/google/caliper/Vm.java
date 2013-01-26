@@ -32,15 +32,23 @@ class Vm {
    * @param vmArgs the path to the VM followed by VM arguments.
    * @param applicationArgs arguments to the target process
    */
-  public ProcessBuilder newProcessBuilder(File workingDirectory, String classPath,
+  public ProcessBuilder newProcessBuilder(File workingDirectory, 
       ImmutableList<String> vmArgs, String className, ImmutableList<String> applicationArgs) {
     ProcessBuilder result = new ProcessBuilder();
     result.directory(workingDirectory);
     result.command().addAll(vmArgs);
     result.command().add("-cp");
-    result.command().add(classPath);
+    result.command().add(getClassPath());
     result.command().add(className);
     result.command().addAll(applicationArgs);
     return result;
+  }
+
+  public String getClassPath() {
+    String classPath = System.getProperty("java.class.path");
+    if (classPath == null || classPath.length() == 0) {
+      throw new IllegalStateException("java.class.path is undefined in " + System.getProperties());
+    }
+    return classPath;
   }
 }

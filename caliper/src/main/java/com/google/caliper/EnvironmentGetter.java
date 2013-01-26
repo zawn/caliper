@@ -121,7 +121,7 @@ public final class EnvironmentGetter {
   private static Multimap<String, String> propertiesFileToMultimap(Reader reader)
       throws IOException {
     ImmutableMultimap.Builder<String, String> result = ImmutableMultimap.builder();
-    BufferedReader in = new BufferedReader(reader);
+    BufferedReader in = new BufferedReader(reader, 8192);
 
     String line;
     while((line = in.readLine()) != null) {
@@ -163,7 +163,7 @@ public final class EnvironmentGetter {
 
     Process process = Runtime.getRuntime().exec(new String[] {"/system/bin/getprop"});
     BufferedReader reader = new BufferedReader(
-        new InputStreamReader(process.getInputStream(), "ISO-8859-1"));
+            new InputStreamReader(process.getInputStream(), "ISO-8859-1"), 8192);
 
     Pattern pattern = Pattern.compile("\\[([^\\]]*)\\]: \\[([^\\]]*)\\]");
     String line;
